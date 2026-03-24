@@ -1,7 +1,7 @@
-# PYTHON GENERIC PORT SCANNER
+# PYTHONPORT SCANNER
 # Goal:
 # 1. Learn the fundamentals of socket programming in Python
-# 2. Create a simple port scanner that can check for open ports on a target host
+# 2. Create a simple port scanner that can check for open ports on a target host. Features will be added
 # 3. Understand how to handle exceptions and errors in Python
 
 # import modules and libraries in Python
@@ -38,6 +38,19 @@ def scan(host,port, timeout=1.0):
     sock.close()
     return result == 0
 
+# Create a function to grab the banner for host and port. This will allow us to identify the service running on the open port,
+# which can be useful for further analysis and understanding of the target system.
+def grab_banner(host, port):
+    try:
+        s = socket.socket()
+        s.settimeout(2)
+        s.connect((host, port))
+        banner = s.recv(1024).decode().strip()
+        s.close()
+        return banner
+    except Exception:
+        return None
+
 # legal host to test against. These are open ports useful for learning and testing purposes.
 
 # Adds command-line arguments for host and port range. This allows users to specify the target host and the range of ports to scan when running the script. 
@@ -53,27 +66,26 @@ parser.add_argument("--ports", default="1-1024", help="Port range e.g. 1-1024")
 # --timeout: specify the timeout for socket connections. default: sets the default value to 1.0 seconds. type: ensures that the input is treated as a float.
 parser.add_argument("--timeout", type=float, default=1.0, help="Timeout in seconds for socket connection")
 
-# assign the overall argument to var args
+# Parse the command-line arguments.
 args = parser.parse_args()
-
-# host = "scanme.nmap.org"
-# host = "127.0.0.1" # your local machine. Uncomment to test
 host = args.host
 
 start, end = args.ports.split("-")
 start, end = int(start), int(end)
 
-# print(args.host) # test the host argument. Uncomment to test
-
-
 # Function to print open ports and their corresponding services.
 def scan_print(port):
     if scan(host, port) is True:
         service = ports.get(port, "Unknown")
-        print(f"Port {port} has '{service}' open.")
+        banner = grab_banner(host, port)
+        if banner:
+            print(f"Port {port} has '{service}' open. | Banner: {banner}")
+        else:
+            print(f"Port {port} has '{service}' open.")
 
 # Add threading to speed up the scanning process
 with ThreadPoolExecutor(max_workers=100) as executor:
     executor.map(scan_print, range(start, end + 1))
 
-# If port is open, check if it's in the map and display service name through a services database.
+# To run the script, use this command in the terminal
+# python scanner.py --host scanme.nmap.org --ports 1-1024 --timeout 2 (you can adjust the host, port range, and timeout as needed)
