@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 import argparse
 import socket
 
-ports = {
+PORTS = {
     21: "ftp", # Field Transfer Protocol
     22: "ssh", # Secure Shell
     23: "telnet", # Telnet protocol
@@ -55,7 +55,7 @@ def grab(host, port):
 # Function to print open ports and their corresponding services.
 def scanner(port, host, timeout):
     if scan(host, port, timeout) is True:
-        service = ports.get(port, "Unknown")
+        service = PORTS.get(port, "Unknown")
         banner = grab(host, port)
         if banner:
             print(f"Port {port} has '{service}' open. | Banner: {banner}")
