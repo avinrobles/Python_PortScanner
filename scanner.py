@@ -1,4 +1,4 @@
-# PYTHONPORT SCANNER
+# Port Scanner | Simple Python Script
 # Goal:
 # 1. Learn the fundamentals of socket programming in Python
 # 2. Create a simple port scanner that can check for open ports on a target host. Features will be added
@@ -9,7 +9,6 @@ from concurrent.futures import ThreadPoolExecutor
 import argparse
 import socket
 
-#  Add ports and label them in a dict
 ports = {
     21: "ftp", # Field Transfer Protocol
     22: "ssh", # Secure Shell
@@ -31,7 +30,7 @@ ports = {
 }
 
 # Create a function to perform port scanning. It will allow parameters host & port range
-def scan(host,port, timeout=1.0):
+def scan(host, port, timeout=1.0):
     sock = socket.socket()
     sock.settimeout(timeout)
     result = sock.connect_ex((host, port))
@@ -40,7 +39,7 @@ def scan(host,port, timeout=1.0):
 
 # Create a function to grab the banner for host and port. This will allow us to identify the service running on the open port,
 # which can be useful for further analysis and understanding of the target system.
-def grab_banner(host, port):
+def grab(host, port):
     try:
         s = socket.socket()
         s.settimeout(2)
@@ -53,39 +52,45 @@ def grab_banner(host, port):
 
 # legal host to test against. These are open ports useful for learning and testing purposes.
 
-# Adds command-line arguments for host and port range. This allows users to specify the target host and the range of ports to scan when running the script. 
-# The default port range is set to 1-1024, which includes common well-known ports.
-parser = argparse.ArgumentParser(description="Port Scanner")
-
-# --host: specifies the target host to scan. required: makes the argument True. help: provides a description of the argument for users when they use the --help option.
-parser.add_argument("--host", required=True, help="Target host to scan")
-
-# --ports: specify range of ports to scan. default: sets the default value to "1-1024".
-parser.add_argument("--ports", default="1-1024", help="Port range e.g. 1-1024")
-
-# --timeout: specify the timeout for socket connections. default: sets the default value to 1.0 seconds. type: ensures that the input is treated as a float.
-parser.add_argument("--timeout", type=float, default=1.0, help="Timeout in seconds for socket connection")
-
-# Parse the command-line arguments.
-args = parser.parse_args()
-host = args.host
-
-start, end = args.ports.split("-")
-start, end = int(start), int(end)
-
 # Function to print open ports and their corresponding services.
-def scan_print(port):
-    if scan(host, port) is True:
+def scanner(port, host, timeout):
+    if scan(host, port, timeout) is True:
         service = ports.get(port, "Unknown")
-        banner = grab_banner(host, port)
+        banner = grab(host, port)
         if banner:
             print(f"Port {port} has '{service}' open. | Banner: {banner}")
         else:
             print(f"Port {port} has '{service}' open.")
 
-# Add threading to speed up the scanning process
-with ThreadPoolExecutor(max_workers=100) as executor:
-    executor.map(scan_print, range(start, end + 1))
+def main():
+    # Adds command-line arguments for host and port range. This allows users to specify the target host and the range of ports to scan when running the script. 
+    # The default port range is set to 1-1024, which includes common well-known ports.
+    parser = argparse.ArgumentParser(description="Port Scanner")
+
+    # --host: specifies the target host to scan. required: makes the argument True. help: provides a description of the argument for users when they use the --help option.
+    parser.add_argument("--host", required=True, help="Target host to scan")
+
+    # --ports: specify range of ports to scan. default: sets the default value to "1-1024".
+    parser.add_argument("--ports", default="1-1024", help="Port range e.g. 1-1024")
+
+    # --timeout: specify the timeout for socket connections. default: sets the default value to 1.0 seconds. type: ensures that the input is treated as a float.
+    parser.add_argument("--timeout", type=float, default=1.0, help="Timeout in seconds for socket connection")
+
+    # Parse the command-line arguments.
+    args = parser.parse_args()
+    host = args.host
+    start, end = args.ports.split("-")
+    start, end = int(start), int(end)
+
+    # Add threading to speed up the scanning process
+    with ThreadPoolExecutor(max_workers=100) as executor:
+        executor.map(
+            lambda port: scanner(port, host, args.timeout),
+            range(start, end + 1)
+        )
+
+if __name__ == "__main__":
+    main()
 
 # To run the script, use this command in the terminal
 # python scanner.py --host scanme.nmap.org --ports 1-1024 --timeout 2 (you can adjust the host, port range, and timeout as needed)
